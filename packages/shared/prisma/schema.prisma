@@ -1,0 +1,1298 @@
+// LOOMI PMS - Multi-tenant Property Management System
+// Prisma Schema v5
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// TENANT & ACCESS CONTROL
+// ============================================================================
+
+model Org {
+  id        String    @id @default(uuid())
+  name      String
+  slug      String    @unique
+  planId    String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  // Relations
+  plan           Plan              @relation(fields: [planId], references: [id])
+  memberships    Membership[]
+  roles          Role[]
+  properties     Property[]
+  contacts       Contact[]
+  leases         Lease[]
+  charges        Charge[]
+  invoices       Invoice[]
+  payments       Payment[]
+  workOrders     WorkOrder[]
+  documents      Document[]
+  communications Communication[]
+  auditLogs      AuditLog[]
+  subscriptions  OrgSubscription[]
+  usageEvents    UsageEvent[]
+  apiKeys        ApiKey[]
+  webhooks       Webhook[]
+  Journal        Journal[]
+  ApBill         ApBill[]
+  BankAccount    BankAccount[]
+  Reconciliation Reconciliation[]
+  PayoutBatch    PayoutBatch[]
+  OwnerStatement OwnerStatement[]
+  Integration    Integration[]
+
+  @@index([slug])
+  @@index([planId])
+  @@map("orgs")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  name          String?
+  image         String?
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  memberships Membership[]
+  auditLogs   AuditLog[]   @relation("UserAuditLogs")
+
+  @@map("users")
+}
+
+model Membership {
+  id        String    @id @default(uuid())
+  orgId     String
+  userId    String
+  roleId    String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  // Relations
+  org                   Org                     @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user                  User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role                  Role?                   @relation(fields: [roleId], references: [id])
+  propertyAssignments   PropertyAssignment[]
+  DocumentPermission    DocumentPermission[]
+  ArchitecturalApproval ArchitecturalApproval[]
+
+  @@unique([orgId, userId])
+  @@index([orgId])
+  @@index([userId])
+  @@index([roleId])
+  @@map("memberships")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  orgId       String
+  name        String
+  description String?
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  org                Org                  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  memberships        Membership[]
+  permissions        RolePermission[]
+  DocumentPermission DocumentPermission[]
+
+  @@unique([orgId, name])
+  @@index([orgId])
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  capability  String   @unique // e.g., "properties.read", "charges.create", "work_orders.assign"
+  description String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String @id @default(uuid())
+  roleId       String
+  permissionId String
+
+  // Relations
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+model PropertyAssignment {
+  id           String   @id @default(uuid())
+  membershipId String
+  propertyId   String
+  scope        String   @default("read") // "read" | "write" | "admin"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  membership Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  property   Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([membershipId, propertyId])
+  @@index([membershipId])
+  @@index([propertyId])
+  @@map("property_assignments")
+}
+
+// ============================================================================
+// PLANS & BILLING
+// ============================================================================
+
+model Plan {
+  id          String   @id @default(uuid())
+  name        String   @unique // "starter" | "growth" | "pro" | "enterprise"
+  displayName String
+  price       Decimal  @db.Decimal(10, 2)
+  interval    String // "month" | "year"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  orgs         Org[]
+  quotas       Quota[]
+  featureFlags PlanFeatureFlag[]
+
+  @@map("plans")
+}
+
+model Quota {
+  id        String   @id @default(uuid())
+  planId    String
+  resource  String // "max_units" | "max_properties" | "max_users" | "max_outbound_messages" | "max_api_rpm"
+  limit     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, resource])
+  @@index([planId])
+  @@map("quotas")
+}
+
+model PlanFeatureFlag {
+  id        String   @id @default(uuid())
+  planId    String
+  feature   String // "rental_pack" | "hoa_pack" | "accounting_pro_pack" | "enterprise_pack"
+  enabled   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, feature])
+  @@index([planId])
+  @@map("plan_feature_flags")
+}
+
+model OrgSubscription {
+  id                   String    @id @default(uuid())
+  orgId                String    @unique
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?   @unique
+  status               String // "active" | "canceled" | "past_due" | "trialing"
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  // Relations
+  org Org @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+  @@index([stripeCustomerId])
+  @@map("org_subscriptions")
+}
+
+model UsageEvent {
+  id        String   @id @default(uuid())
+  orgId     String
+  resource  String // "sms" | "email" | "ai_tokens" | "api_calls"
+  quantity  Int      @default(1)
+  metadata  Json? // Additional context
+  createdAt DateTime @default(now())
+
+  // Relations
+  org Org @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, createdAt])
+  @@index([orgId, resource, createdAt])
+  @@map("usage_events")
+}
+
+// ============================================================================
+// PORTFOLIO & ASSETS
+// ============================================================================
+
+model Portfolio {
+  id        String    @id @default(uuid())
+  orgId     String
+  name      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  // Relations
+  properties Property[]
+
+  @@index([orgId])
+  @@map("portfolios")
+}
+
+model Property {
+  id           String    @id @default(uuid())
+  orgId        String
+  portfolioId  String?
+  name         String
+  address      String
+  city         String
+  state        String
+  zip          String
+  propertyType String // "rental" | "hoa" | "condo" | "mixed"
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  // Relations
+  org                   Org                    @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  portfolio             Portfolio?             @relation(fields: [portfolioId], references: [id])
+  buildings             Building[]
+  units                 Unit[]
+  contacts              ContactLink[]
+  propertyAssignments   PropertyAssignment[]
+  leases                Lease[]
+  charges               Charge[]
+  workOrders            WorkOrder[]
+  documents             Document[]
+  communications        Communication[]
+  violations            Violation[]
+  architecturalRequests ArchitecturalRequest[]
+  amenities             Amenity[]
+  Inspection            Inspection[]
+  OwnerStatement        OwnerStatement[]
+
+  @@index([orgId])
+  @@index([portfolioId])
+  @@index([propertyType])
+  @@map("properties")
+}
+
+model Building {
+  id         String    @id @default(uuid())
+  propertyId String
+  name       String
+  address    String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  // Relations
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  units    Unit[]
+
+  @@index([propertyId])
+  @@map("buildings")
+}
+
+model Unit {
+  id         String    @id @default(uuid())
+  propertyId String
+  buildingId String?
+  unitNumber String
+  bedrooms   Int?
+  bathrooms  Decimal?  @db.Decimal(3, 1)
+  squareFeet Int?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  // Relations
+  property             Property               @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  building             Building?              @relation(fields: [buildingId], references: [id])
+  contactLinks         ContactLink[]
+  leases               Lease[]
+  charges              Charge[]
+  workOrders           WorkOrder[]
+  Inspection           Inspection[]
+  Violation            Violation[]
+  ArchitecturalRequest ArchitecturalRequest[]
+
+  @@unique([propertyId, unitNumber])
+  @@index([propertyId])
+  @@index([buildingId])
+  @@map("units")
+}
+
+// ============================================================================
+// CONTACTS
+// ============================================================================
+
+model Contact {
+  id        String    @id @default(uuid())
+  orgId     String
+  type      String // "resident" | "owner" | "board" | "vendor"
+  firstName String
+  lastName  String
+  email     String?
+  phone     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  // Relations
+  org                   Org                    @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  links                 ContactLink[]
+  leases                Lease[]
+  payments              Payment[]
+  workOrdersRequester   WorkOrder[]            @relation("WorkOrderRequester")
+  workOrdersVendor      WorkOrder[]            @relation("WorkOrderVendor")
+  occupancies           Occupancy[]
+  charges               Charge[]
+  paymentMethods        PaymentMethod[]
+  deliveries            Delivery[]
+  violations            Violation[]
+  architecturalRequests ArchitecturalRequest[]
+  reservations          Reservation[]
+  ownerStatements       OwnerStatement[]
+  apBills               ApBill[]               @relation("ApBillVendor")
+
+  @@index([orgId])
+  @@index([orgId, type])
+  @@map("contacts")
+}
+
+model ContactLink {
+  id         String   @id @default(uuid())
+  contactId  String
+  propertyId String?
+  unitId     String?
+  role       String? // "tenant" | "owner" | "board_member" | "vendor"
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  contact  Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  property Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  unit     Unit?     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@index([contactId])
+  @@index([propertyId])
+  @@index([unitId])
+  @@map("contact_links")
+}
+
+// ============================================================================
+// OCCUPANCY / LEASING
+// ============================================================================
+
+model Lease {
+  id          String    @id @default(uuid())
+  orgId       String
+  propertyId  String
+  unitId      String
+  contactId   String // Primary tenant
+  startDate   DateTime
+  endDate     DateTime?
+  monthlyRent Decimal   @db.Decimal(10, 2)
+  status      String    @default("active") // "active" | "expired" | "terminated"
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  org         Org         @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  property    Property    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  unit        Unit        @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  contact     Contact     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  occupancies Occupancy[]
+  charges     Charge[]
+
+  @@index([orgId])
+  @@index([propertyId])
+  @@index([unitId])
+  @@index([contactId])
+  @@index([status])
+  @@map("leases")
+}
+
+model Occupancy {
+  id        String    @id @default(uuid())
+  leaseId   String
+  contactId String
+  startDate DateTime
+  endDate   DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relations
+  lease   Lease   @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([leaseId])
+  @@index([contactId])
+  @@map("occupancies")
+}
+
+// ============================================================================
+// AR (MONEY IN)
+// ============================================================================
+
+model Charge {
+  id                String   @id @default(uuid())
+  orgId             String
+  propertyId        String
+  unitId            String?
+  leaseId           String?
+  contactId         String?
+  type              String // "rent" | "dues" | "assessment" | "fee" | "fine"
+  description       String
+  amount            Decimal  @db.Decimal(10, 2)
+  dueDate           DateTime
+  status            String   @default("pending") // "pending" | "paid" | "overdue" | "waived"
+  isRecurring       Boolean  @default(false)
+  recurringSchedule Json? // For recurring charges
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  org      Org       @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  property Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  unit     Unit?     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  lease    Lease?    @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+  contact  Contact?  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  payments Payment[]
+  invoices Invoice[]
+  Fine     Fine[]
+
+  @@index([orgId])
+  @@index([propertyId])
+  @@index([unitId])
+  @@index([contactId])
+  @@index([status])
+  @@index([dueDate])
+  @@map("charges")
+}
+
+model Invoice {
+  id        String   @id @default(uuid())
+  orgId     String
+  chargeId  String?
+  number    String   @unique
+  status    String   @default("draft") // "draft" | "sent" | "paid" | "overdue" | "void"
+  total     Decimal  @db.Decimal(10, 2)
+  dueDate   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  org          Org           @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  charge       Charge?       @relation(fields: [chargeId], references: [id])
+  payments     Payment[]
+  invoiceLines InvoiceLine[]
+
+  @@index([orgId])
+  @@index([chargeId])
+  @@index([status])
+  @@map("invoices")
+}
+
+model InvoiceLine {
+  id          String   @id @default(uuid())
+  invoiceId   String
+  description String
+  amount      Decimal  @db.Decimal(10, 2)
+  createdAt   DateTime @default(now())
+
+  // Relations
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@map("invoice_lines")
+}
+
+model Payment {
+  id              String    @id @default(uuid())
+  orgId           String
+  invoiceId       String?
+  chargeId        String?
+  contactId       String?
+  amount          Decimal   @db.Decimal(10, 2)
+  method          String // "check" | "ach" | "card" | "cash" | "other"
+  paymentMethodId String? // Reference to tokenized payment method
+  status          String    @default("pending") // "pending" | "completed" | "failed" | "refunded"
+  processedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  org     Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  invoice Invoice? @relation(fields: [invoiceId], references: [id])
+  charge  Charge?  @relation(fields: [chargeId], references: [id])
+  contact Contact? @relation(fields: [contactId], references: [id])
+  receipt Receipt?
+
+  @@index([orgId])
+  @@index([invoiceId])
+  @@index([chargeId])
+  @@index([contactId])
+  @@index([status])
+  @@map("payments")
+}
+
+model PaymentMethod {
+  id        String   @id @default(uuid())
+  contactId String
+  type      String // "ach" | "card"
+  provider  String // "stripe" | "plaid" | etc.
+  token     String // Encrypted token reference
+  last4     String?
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([contactId])
+  @@map("payment_methods")
+}
+
+model Receipt {
+  id        String   @id @default(uuid())
+  paymentId String   @unique
+  pdfUrl    String
+  createdAt DateTime @default(now())
+
+  // Relations
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@map("receipts")
+}
+
+// ============================================================================
+// MAINTENANCE
+// ============================================================================
+
+model WorkOrder {
+  id                String    @id @default(uuid())
+  orgId             String
+  propertyId        String
+  unitId            String?
+  contactId         String? // Requester
+  vendorId          String? // Assigned vendor (also a contact)
+  title             String
+  description       String?
+  priority          String    @default("normal") // "low" | "normal" | "high" | "urgent"
+  status            String    @default("open") // "open" | "assigned" | "in_progress" | "completed" | "closed"
+  permissionToEnter Boolean   @default(false)
+  scheduledAt       DateTime?
+  completedAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  org         Org                   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  property    Property              @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  unit        Unit?                 @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  contact     Contact?              @relation("WorkOrderRequester", fields: [contactId], references: [id])
+  vendor      Contact?              @relation("WorkOrderVendor", fields: [vendorId], references: [id])
+  comments    WorkOrderComment[]
+  attachments WorkOrderAttachment[]
+
+  @@index([orgId])
+  @@index([propertyId])
+  @@index([unitId])
+  @@index([status])
+  @@index([priority])
+  @@map("work_orders")
+}
+
+model WorkOrderComment {
+  id          String   @id @default(uuid())
+  workOrderId String
+  userId      String? // System user or null for external
+  content     String
+  createdAt   DateTime @default(now())
+
+  // Relations
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+
+  @@index([workOrderId])
+  @@map("work_order_comments")
+}
+
+model WorkOrderAttachment {
+  id          String   @id @default(uuid())
+  workOrderId String
+  documentId  String
+  createdAt   DateTime @default(now())
+
+  // Relations
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  document  Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([workOrderId, documentId])
+  @@index([workOrderId])
+  @@map("work_order_attachments")
+}
+
+model Inspection {
+  id          String    @id @default(uuid())
+  orgId       String
+  propertyId  String
+  unitId      String?
+  type        String // "move_in" | "move_out" | "routine" | "make_ready"
+  scheduledAt DateTime
+  completedAt DateTime?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  unit     Unit?    @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+  @@index([propertyId])
+  @@index([unitId])
+  @@map("inspections")
+}
+
+// ============================================================================
+// COMMUNICATIONS
+// ============================================================================
+
+model Template {
+  id        String   @id @default(uuid())
+  orgId     String
+  name      String
+  type      String // "email" | "sms" | "letter"
+  subject   String?
+  body      String // Rich text or plain text
+  variables Json? // Available template variables
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  communications Communication[]
+
+  @@index([orgId])
+  @@map("templates")
+}
+
+model Communication {
+  id          String    @id @default(uuid())
+  orgId       String
+  propertyId  String?
+  templateId  String?
+  type        String // "email" | "sms" | "letter" | "announcement"
+  subject     String?
+  body        String
+  status      String    @default("draft") // "draft" | "scheduled" | "sending" | "sent" | "failed"
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  org        Org        @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  property   Property?  @relation(fields: [propertyId], references: [id])
+  template   Template?  @relation(fields: [templateId], references: [id])
+  deliveries Delivery[]
+
+  @@index([orgId])
+  @@index([propertyId])
+  @@index([status])
+  @@map("communications")
+}
+
+model Delivery {
+  id              String    @id @default(uuid())
+  communicationId String
+  contactId       String?
+  email           String?
+  phone           String?
+  status          String    @default("pending") // "pending" | "sent" | "delivered" | "failed" | "bounced"
+  deliveredAt     DateTime?
+  errorMessage    String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  communication Communication @relation(fields: [communicationId], references: [id], onDelete: Cascade)
+  contact       Contact?      @relation(fields: [contactId], references: [id])
+
+  @@index([communicationId])
+  @@index([contactId])
+  @@index([status])
+  @@map("deliveries")
+}
+
+model Unsubscribe {
+  id        String   @id @default(uuid())
+  email     String?
+  phone     String?
+  type      String // "email" | "sms" | "all"
+  createdAt DateTime @default(now())
+
+  @@unique([email, type])
+  @@unique([phone, type])
+  @@index([email])
+  @@index([phone])
+  @@map("unsubscribes")
+}
+
+// ============================================================================
+// DOCUMENTS
+// ============================================================================
+
+model DocumentFolder {
+  id         String   @id @default(uuid())
+  orgId      String
+  propertyId String?
+  parentId   String?
+  name       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  parent    DocumentFolder?  @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children  DocumentFolder[] @relation("FolderHierarchy")
+  documents Document[]
+
+  @@index([orgId])
+  @@index([propertyId])
+  @@index([parentId])
+  @@map("document_folders")
+}
+
+model Document {
+  id         String   @id @default(uuid())
+  orgId      String
+  propertyId String?
+  folderId   String?
+  name       String
+  fileName   String
+  fileUrl    String // S3 signed URL or path
+  fileSize   Int
+  mimeType   String
+  uploadedBy String? // User ID
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  org                  Org                   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  property             Property?             @relation(fields: [propertyId], references: [id])
+  folder               DocumentFolder?       @relation(fields: [folderId], references: [id])
+  permissions          DocumentPermission[]
+  workOrderAttachments WorkOrderAttachment[]
+
+  @@index([orgId])
+  @@index([propertyId])
+  @@index([folderId])
+  @@map("documents")
+}
+
+model DocumentPermission {
+  id           String   @id @default(uuid())
+  documentId   String
+  membershipId String?
+  roleId       String?
+  permission   String   @default("read") // "read" | "write" | "admin"
+  createdAt    DateTime @default(now())
+
+  // Relations
+  document   Document    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  membership Membership? @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  role       Role?       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, membershipId])
+  @@unique([documentId, roleId])
+  @@index([documentId])
+  @@map("document_permissions")
+}
+
+// ============================================================================
+// HOA/CONDO PACK
+// ============================================================================
+
+model Violation {
+  id          String   @id @default(uuid())
+  orgId       String
+  propertyId  String
+  unitId      String?
+  contactId   String?
+  type        String
+  description String
+  status      String   @default("open") // "open" | "notice_sent" | "fine_applied" | "resolved" | "escalated"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  property Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  unit     Unit?           @relation(fields: [unitId], references: [id])
+  contact  Contact?        @relation(fields: [contactId], references: [id])
+  steps    ViolationStep[]
+  fines    Fine[]
+
+  @@index([orgId])
+  @@index([propertyId])
+  @@index([status])
+  @@map("violations")
+}
+
+model ViolationStep {
+  id          String   @id @default(uuid())
+  violationId String
+  type        String // "warning" | "notice" | "fine" | "escalation"
+  description String
+  amount      Decimal? @db.Decimal(10, 2)
+  occurredAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  // Relations
+  violation Violation @relation(fields: [violationId], references: [id], onDelete: Cascade)
+
+  @@index([violationId])
+  @@map("violation_steps")
+}
+
+model Fine {
+  id          String   @id @default(uuid())
+  violationId String
+  chargeId    String? // Linked charge
+  amount      Decimal  @db.Decimal(10, 2)
+  description String
+  createdAt   DateTime @default(now())
+
+  // Relations
+  violation Violation @relation(fields: [violationId], references: [id], onDelete: Cascade)
+  charge    Charge?   @relation(fields: [chargeId], references: [id])
+
+  @@index([violationId])
+  @@index([chargeId])
+  @@map("fines")
+}
+
+model ArchitecturalRequest {
+  id          String    @id @default(uuid())
+  orgId       String
+  propertyId  String
+  unitId      String?
+  contactId   String?
+  title       String
+  description String
+  status      String    @default("pending") // "pending" | "approved" | "rejected" | "changes_requested"
+  submittedAt DateTime  @default(now())
+  reviewedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  property  Property                @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  unit      Unit?                   @relation(fields: [unitId], references: [id])
+  contact   Contact?                @relation(fields: [contactId], references: [id])
+  approvals ArchitecturalApproval[]
+
+  @@index([orgId])
+  @@index([propertyId])
+  @@index([status])
+  @@map("architectural_requests")
+}
+
+model ArchitecturalApproval {
+  id           String   @id @default(uuid())
+  requestId    String
+  membershipId String
+  decision     String // "approve" | "reject" | "request_changes"
+  comments     String?
+  createdAt    DateTime @default(now())
+
+  // Relations
+  request    ArchitecturalRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  membership Membership           @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+
+  @@unique([requestId, membershipId])
+  @@index([requestId])
+  @@map("architectural_approvals")
+}
+
+model Amenity {
+  id          String   @id @default(uuid())
+  orgId       String
+  propertyId  String
+  name        String
+  description String?
+  rules       Json? // Reservation rules, blackouts, max duration, deposits
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  property     Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  reservations Reservation[]
+
+  @@index([orgId])
+  @@index([propertyId])
+  @@map("amenities")
+}
+
+model Reservation {
+  id        String   @id @default(uuid())
+  amenityId String
+  contactId String?
+  startTime DateTime
+  endTime   DateTime
+  status    String   @default("pending") // "pending" | "confirmed" | "cancelled"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  amenity Amenity  @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+  contact Contact? @relation(fields: [contactId], references: [id])
+
+  @@index([amenityId])
+  @@index([contactId])
+  @@map("reservations")
+}
+
+// ============================================================================
+// ACCOUNTING PRO PACK
+// ============================================================================
+
+model ChartOfAccount {
+  id        String   @id @default(uuid())
+  orgId     String
+  code      String
+  name      String
+  type      String // "asset" | "liability" | "equity" | "revenue" | "expense"
+  parentId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  parent       ChartOfAccount?  @relation("COAHierarchy", fields: [parentId], references: [id])
+  children     ChartOfAccount[] @relation("COAHierarchy")
+  journalLines JournalLine[]
+
+  @@unique([orgId, code])
+  @@index([orgId])
+  @@index([parentId])
+  @@map("chart_of_accounts")
+}
+
+model Journal {
+  id          String   @id @default(uuid())
+  orgId       String
+  number      String   @unique
+  date        DateTime
+  description String?
+  status      String   @default("draft") // "draft" | "posted"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  org   Org           @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  lines JournalLine[]
+
+  @@index([orgId])
+  @@index([status])
+  @@map("journals")
+}
+
+model JournalLine {
+  id          String   @id @default(uuid())
+  journalId   String
+  accountId   String
+  debit       Decimal? @db.Decimal(10, 2)
+  credit      Decimal? @db.Decimal(10, 2)
+  description String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  journal            Journal              @relation(fields: [journalId], references: [id], onDelete: Cascade)
+  account            ChartOfAccount       @relation(fields: [accountId], references: [id])
+  ReconciliationLine ReconciliationLine[]
+
+  @@index([journalId])
+  @@index([accountId])
+  @@map("journal_lines")
+}
+
+model ApBill {
+  id            String    @id @default(uuid())
+  orgId         String
+  vendorId      String?
+  invoiceNumber String
+  amount        Decimal   @db.Decimal(10, 2)
+  dueDate       DateTime
+  status        String    @default("pending") // "pending" | "approved" | "paid" | "void"
+  approvedBy    String?
+  approvedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  org    Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  vendor Contact? @relation("ApBillVendor", fields: [vendorId], references: [id])
+
+  @@index([orgId])
+  @@index([vendorId])
+  @@index([status])
+  @@map("ap_bills")
+}
+
+model BankAccount {
+  id            String   @id @default(uuid())
+  orgId         String
+  name          String
+  accountNumber String
+  routingNumber String?
+  type          String // "checking" | "savings"
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  org             Org               @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  transactions    BankTransaction[]
+  reconciliations Reconciliation[]
+
+  @@index([orgId])
+  @@map("bank_accounts")
+}
+
+model BankTransaction {
+  id            String    @id @default(uuid())
+  bankAccountId String
+  date          DateTime
+  description   String
+  amount        Decimal   @db.Decimal(10, 2) // Positive = deposit, Negative = withdrawal
+  balance       Decimal?  @db.Decimal(10, 2)
+  reference     String?
+  importedAt    DateTime  @default(now())
+  matchedAt     DateTime?
+  createdAt     DateTime  @default(now())
+
+  // Relations
+  bankAccount     BankAccount          @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+  reconciliations ReconciliationLine[]
+
+  @@index([bankAccountId])
+  @@index([date])
+  @@map("bank_transactions")
+}
+
+model Reconciliation {
+  id               String    @id @default(uuid())
+  orgId            String
+  bankAccountId    String
+  statementDate    DateTime
+  statementBalance Decimal   @db.Decimal(10, 2)
+  status           String    @default("draft") // "draft" | "in_progress" | "completed"
+  completedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Relations
+  org         Org                  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  bankAccount BankAccount          @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+  lines       ReconciliationLine[]
+
+  @@index([orgId])
+  @@index([bankAccountId])
+  @@index([status])
+  @@map("reconciliations")
+}
+
+model ReconciliationLine {
+  id                String   @id @default(uuid())
+  reconciliationId  String
+  bankTransactionId String?
+  journalLineId     String?
+  amount            Decimal  @db.Decimal(10, 2)
+  description       String
+  matchedAt         DateTime @default(now())
+
+  // Relations
+  reconciliation  Reconciliation   @relation(fields: [reconciliationId], references: [id], onDelete: Cascade)
+  bankTransaction BankTransaction? @relation(fields: [bankTransactionId], references: [id])
+  journalLine     JournalLine?     @relation(fields: [journalLineId], references: [id])
+
+  @@index([reconciliationId])
+  @@map("reconciliation_lines")
+}
+
+model PayoutBatch {
+  id          String    @id @default(uuid())
+  orgId       String
+  name        String
+  status      String    @default("draft") // "draft" | "processing" | "completed" | "failed"
+  totalAmount Decimal   @db.Decimal(10, 2)
+  processedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  org             Org              @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  ownerStatements OwnerStatement[]
+
+  @@index([orgId])
+  @@index([status])
+  @@map("payout_batches")
+}
+
+model OwnerStatement {
+  id            String   @id @default(uuid())
+  orgId         String
+  payoutBatchId String?
+  contactId     String
+  propertyId    String?
+  periodStart   DateTime
+  periodEnd     DateTime
+  totalIncome   Decimal  @db.Decimal(10, 2)
+  totalExpenses Decimal  @db.Decimal(10, 2)
+  netAmount     Decimal  @db.Decimal(10, 2)
+  pdfUrl        String?
+  status        String   @default("draft") // "draft" | "sent" | "paid"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  org         Org          @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  payoutBatch PayoutBatch? @relation(fields: [payoutBatchId], references: [id])
+  contact     Contact      @relation(fields: [contactId], references: [id])
+  property    Property?    @relation(fields: [propertyId], references: [id])
+
+  @@index([orgId])
+  @@index([contactId])
+  @@index([propertyId])
+  @@map("owner_statements")
+}
+
+// ============================================================================
+// PLATFORM
+// ============================================================================
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  orgId      String
+  userId     String?
+  action     String // "create" | "update" | "delete" | "login" | "permission_change"
+  entityType String // "property" | "charge" | "work_order" | "role" | etc.
+  entityId   String?
+  changes    Json? // Before/after snapshot
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  // Relations
+  org  Org   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user User? @relation("UserAuditLogs", fields: [userId], references: [id])
+
+  @@index([orgId, createdAt])
+  @@index([orgId, entityType, entityId])
+  @@index([userId])
+  @@map("audit_logs")
+}
+
+model ApiKey {
+  id         String    @id @default(uuid())
+  orgId      String
+  name       String
+  keyHash    String // Hashed API key
+  lastUsedAt DateTime?
+  rateLimit  Int       @default(60) // Requests per minute
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  // Relations
+  org Org @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+  @@index([keyHash])
+  @@map("api_keys")
+}
+
+model Webhook {
+  id        String   @id @default(uuid())
+  orgId     String
+  url       String
+  events    String[] // Array of event types
+  secret    String // Webhook secret for signing
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  org    Org             @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  outbox WebhookOutbox[]
+
+  @@index([orgId])
+  @@map("webhooks")
+}
+
+model WebhookOutbox {
+  id           String    @id @default(uuid())
+  webhookId    String
+  event        String
+  payload      Json
+  status       String    @default("pending") // "pending" | "sent" | "failed" | "dead_letter"
+  attempts     Int       @default(0)
+  nextRetryAt  DateTime?
+  sentAt       DateTime?
+  errorMessage String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  webhook Webhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId])
+  @@index([status, nextRetryAt])
+  @@map("webhook_outbox")
+}
+
+model Integration {
+  id        String   @id @default(uuid())
+  orgId     String
+  type      String // "stripe" | "plaid" | "quickbooks" | "zapier" | etc.
+  name      String
+  config    Json // Encrypted configuration
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  org Org @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+  @@index([orgId, type])
+  @@map("integrations")
+}

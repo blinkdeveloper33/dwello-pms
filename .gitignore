@@ -1,0 +1,63 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Testing
+coverage
+*.log
+
+# Production
+build
+dist
+.next
+out
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local env files
+.env
+.env*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Build outputs
+dist/
+.next/
+out/
+build/
+
+# API build
+apps/api/dist/
+apps/api/*.tsbuildinfo
+
+# Web build
+apps/web/.next/
+apps/web/next-env.d.ts
+apps/web/*.tsbuildinfo
+
+# Prisma
+prisma/migrations
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+

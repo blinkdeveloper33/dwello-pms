@@ -1,0 +1,26 @@
+{
+  "name": "loomi-pms",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter web dev & pnpm --filter api start:dev",
+    "dev:web": "pnpm --filter web dev",
+    "dev:api": "pnpm --filter api start:dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "type-check": "pnpm -r type-check",
+    "db:generate": "pnpm --filter shared db:generate",
+    "db:migrate": "pnpm --filter shared db:migrate",
+    "db:seed": "pnpm --filter shared db:seed",
+    "db:studio": "pnpm --filter shared db:studio"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}
+
