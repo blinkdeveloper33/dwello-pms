@@ -89,8 +89,8 @@ export default async function ResidentPortalPage() {
     select: { propertyId: true, unitId: true },
   });
 
-  const propertyIds = contactLinks.map((link) => link.propertyId).filter(Boolean) as string[];
-  const unitIds = contactLinks.map((link) => link.unitId).filter(Boolean) as string[];
+  const propertyIds = contactLinks.map((link: { propertyId: string | null; unitId: string | null }) => link.propertyId).filter(Boolean) as string[];
+  const unitIds = contactLinks.map((link: { propertyId: string | null; unitId: string | null }) => link.unitId).filter(Boolean) as string[];
 
   const documents = await prisma.document.findMany({
     where: {
