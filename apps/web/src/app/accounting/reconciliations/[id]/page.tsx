@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
-import { authOptions } from "../api/auth/[...nextauth]/authOptions";
+import { authOptions } from "../../../api/auth/[...nextauth]/authOptions";
 import { ReconciliationClient } from './reconciliation-client';
 import { prisma } from '@loomi/shared';
 

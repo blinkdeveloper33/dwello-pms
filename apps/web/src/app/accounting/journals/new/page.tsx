@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
-import { authOptions } from "../api/auth/[...nextauth]/authOptions";
+import { authOptions } from "../../../api/auth/[...nextauth]/authOptions";
 import { NewJournalClient } from './new-journal-client';
 import { prisma } from '@loomi/shared';
 
