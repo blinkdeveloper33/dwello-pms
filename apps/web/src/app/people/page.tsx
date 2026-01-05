@@ -62,7 +62,7 @@ export default async function PeoplePage() {
   return (
     <PeopleClient
       user={session.user}
-      orgs={memberships.map((m) => ({ id: m.org.id, name: m.org.name }))}
+      orgs={memberships.map((m: { org: { id: string; name: string | null } }) => ({ id: m.org.id, name: m.org.name }))}
       currentOrgId={currentOrgId}
       initialContacts={contacts}
     />

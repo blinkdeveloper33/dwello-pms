@@ -50,7 +50,7 @@ export default async function ProfilePage() {
   return (
     <ProfileClient
       user={session.user}
-      orgs={memberships.map((m) => ({ id: m.org.id, name: m.org.name }))}
+      orgs={memberships.map((m: { org: { id: string; name: string | null } }) => ({ id: m.org.id, name: m.org.name }))}
       currentOrgId={currentOrgId}
       userData={{
         id: user.id,
@@ -59,7 +59,7 @@ export default async function ProfilePage() {
         image: user.image,
         emailVerified: user.emailVerified,
         createdAt: user.createdAt,
-        memberships: user.memberships.map((m) => ({
+        memberships: user.memberships.map((m: { org: { name: string | null } }) => ({
           orgName: m.org.name,
         })),
       }}
