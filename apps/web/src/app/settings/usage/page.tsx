@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
-import { authOptions } from "../api/auth/[...nextauth]/authOptions";
+import { authOptions } from "../../api/auth/[...nextauth]/authOptions";
 import { AppShell } from '@loomi/ui';
 import { Card, CardContent, CardHeader, CardTitle } from '@loomi/ui';
 import { Button } from '@loomi/ui';
