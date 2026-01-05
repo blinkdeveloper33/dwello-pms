@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
-import { authOptions } from "../api/auth/[...nextauth]/authOptions"';
+import { authOptions } from "../api/auth/[...nextauth]/authOptions";
 import { NewChargeClient } from './new-charge-client';
 import { prisma } from '@loomi/shared';
 
