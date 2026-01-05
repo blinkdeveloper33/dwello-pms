@@ -40,7 +40,7 @@ export async function GET() {
       emailVerified: user.emailVerified,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
-      memberships: user.memberships.map((m: { org: { id: string } }) => ({
+      memberships: user.memberships.map((m: { org: { id: string; name: string | null } }) => ({
         orgId: m.org.id,
         orgName: m.org.name,
       })),
