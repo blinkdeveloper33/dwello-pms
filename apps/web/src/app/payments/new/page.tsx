@@ -42,7 +42,7 @@ export default async function NewPaymentPage() {
       user={session.user}
       orgs={memberships.map((m: { org: { id: string; name: string | null } }) => ({ id: m.org.id, name: m.org.name }))}
       currentOrgId={currentOrgId}
-      charges={charges.map((c) => ({
+      charges={charges.map((c: { id: string; description: string; amount: number | string; status: string; property: { id: string; name: string } | null; unit: { id: string; unitNumber: string } | null }) => ({
         id: c.id,
         description: c.description,
         amount: Number(c.amount),
