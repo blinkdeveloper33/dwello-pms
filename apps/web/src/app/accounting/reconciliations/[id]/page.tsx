@@ -29,9 +29,15 @@ export default async function ReconciliationPage({ params }: { params: { id: str
       lines: {
         include: {
           bankTransaction: { select: { id: true, date: true, description: true, amount: true } },
-          journalEntry: { select: { id: true, date: true, description: true } },
+          journalLine: { 
+            select: { 
+              id: true, 
+              description: true,
+              journal: { select: { date: true } }
+            } 
+          },
         },
-        orderBy: { createdAt: 'asc' },
+        orderBy: { matchedAt: 'asc' },
       },
     },
   });
@@ -43,7 +49,7 @@ export default async function ReconciliationPage({ params }: { params: { id: str
   const bankTransactions = await prisma.bankTransaction.findMany({
     where: {
       bankAccountId: reconciliation.bankAccountId,
-      reconciled: false,
+      matchedAt: null,
     },
     orderBy: { date: 'desc' },
   });
