@@ -22,7 +22,7 @@ async function getUsageData(orgId: string) {
   if (!org) return null;
 
   const usage = await Promise.all(
-    org.plan.quotas.map(async (quota) => {
+    org.plan.quotas.map(async (quota: { resource: string; limit: number | null }) => {
       let current = 0;
       switch (quota.resource) {
         case 'max_units':
