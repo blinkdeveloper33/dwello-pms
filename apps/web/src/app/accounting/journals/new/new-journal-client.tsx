@@ -37,7 +37,7 @@ interface NewJournalClientProps {
   };
   orgs: Array<{ id: string; name: string }>;
   currentOrgId: string;
-  accounts: Array<{ id: string; name: string; code: string | null; category: string }>;
+  accounts: Array<{ id: string; name: string; code: string | null; type: string }>;
 }
 
 export function NewJournalClient({

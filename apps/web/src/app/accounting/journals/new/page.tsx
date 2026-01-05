@@ -24,8 +24,8 @@ export default async function NewJournalPage() {
 
   const accounts = await prisma.chartOfAccount.findMany({
     where: { orgId: currentOrgId },
-    orderBy: [{ category: 'asc' }, { code: 'asc' }],
-    select: { id: true, name: true, code: true, category: true },
+    orderBy: [{ type: 'asc' }, { code: 'asc' }],
+    select: { id: true, name: true, code: true, type: true },
   });
 
   return (

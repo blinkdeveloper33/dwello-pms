@@ -103,7 +103,7 @@ export default async function UsagePage() {
       .replace('max_', '')
       .replace('_', ' ')
       .split(' ')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
   };
 
@@ -125,7 +125,7 @@ export default async function UsagePage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              {usageData.usage.map((item) => (
+              {usageData.usage.map((item: { resource: string; limit: number | null; current: number; remaining: number; percentage: number; isNearLimit: boolean; isAtLimit: boolean }) => (
                 <div key={item.resource} className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="font-medium">{formatResourceName(item.resource)}</span>

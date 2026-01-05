@@ -24,7 +24,7 @@ export default async function ChartOfAccountsPage() {
 
   const accounts = await prisma.chartOfAccount.findMany({
     where: { orgId: currentOrgId },
-    orderBy: [{ category: 'asc' }, { code: 'asc' }],
+    orderBy: [{ type: 'asc' }, { code: 'asc' }],
   });
 
   return (
