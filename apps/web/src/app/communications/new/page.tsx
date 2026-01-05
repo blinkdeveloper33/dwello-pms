@@ -39,7 +39,12 @@ export default async function NewCommunicationPage() {
       orgs={memberships.map((m: { org: { id: string; name: string | null } }) => ({ id: m.org.id, name: m.org.name ?? '' }))}
       currentOrgId={currentOrgId}
       properties={properties}
-      templates={templates}
+      templates={templates.map((t: { id: string; name: string; type: string; subject: string | null }) => ({
+        id: t.id,
+        name: t.name,
+        type: t.type,
+        subject: t.subject ?? '',
+      }))}
     />
   );
 }

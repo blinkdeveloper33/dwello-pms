@@ -78,14 +78,14 @@ export default async function MetricsPage() {
     monthlyData[monthKey] = { revenue: 0, charges: 0, paid: 0, pending: 0 };
   }
 
-  payments.forEach((payment: { createdAt: Date | string; amount: number | string }) => {
+  payments.forEach((payment: { createdAt: Date; amount: any }) => {
     const monthKey = new Date(payment.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
     if (monthlyData[monthKey]) {
       monthlyData[monthKey].revenue += Number(payment.amount);
     }
   });
 
-  charges.forEach((charge: { createdAt: Date | string; amount: number | string; status: string }) => {
+  charges.forEach((charge: { createdAt: Date; amount: any; status: string }) => {
     const monthKey = new Date(charge.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
     if (monthlyData[monthKey]) {
       monthlyData[monthKey].charges += Number(charge.amount);
@@ -127,9 +127,9 @@ export default async function MetricsPage() {
   ];
 
   // Calculate totals
-  const totalRevenue = payments.reduce((sum: number, p: { amount: number | string }) => sum + Number(p.amount), 0);
-  const totalCharges = charges.reduce((sum: number, c: { amount: number | string }) => sum + Number(c.amount), 0);
-  const totalPaid = charges.filter((c: { status: string }) => c.status === 'paid').reduce((sum: number, c: { amount: number | string }) => sum + Number(c.amount), 0);
+  const totalRevenue = payments.reduce((sum: number, p: { amount: any }) => sum + Number(p.amount), 0);
+  const totalCharges = charges.reduce((sum: number, c: { amount: any }) => sum + Number(c.amount), 0);
+  const totalPaid = charges.filter((c: { status: string }) => c.status === 'paid').reduce((sum: number, c: { amount: any }) => sum + Number(c.amount), 0);
   const collectionRate = totalCharges > 0 ? (totalPaid / totalCharges) * 100 : 0;
 
   return (

@@ -50,7 +50,12 @@ export default async function NewPaymentPage() {
         property: c.property,
         unit: c.unit,
       }))}
-      contacts={contacts}
+      contacts={contacts.map((c: { id: string; firstName: string; lastName: string; email: string | null }) => ({
+        id: c.id,
+        firstName: c.firstName,
+        lastName: c.lastName,
+        email: c.email ?? '',
+      }))}
     />
   );
 }

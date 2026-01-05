@@ -60,7 +60,7 @@ export default async function ProfilePage() {
         emailVerified: user.emailVerified,
         createdAt: user.createdAt,
         memberships: user.memberships.map((m: { org: { name: string | null } }) => ({
-          orgName: m.org.name,
+          orgName: m.org.name ?? '',
         })),
       }}
     />

@@ -43,7 +43,12 @@ export default async function NewChargePage() {
       orgs={memberships.map((m: { org: { id: string; name: string | null } }) => ({ id: m.org.id, name: m.org.name ?? '' }))}
       currentOrgId={currentOrgId}
       properties={properties}
-      contacts={contacts}
+      contacts={contacts.map((c: { id: string; firstName: string; lastName: string; email: string | null }) => ({
+        id: c.id,
+        firstName: c.firstName,
+        lastName: c.lastName,
+        email: c.email ?? '',
+      }))}
     />
   );
 }

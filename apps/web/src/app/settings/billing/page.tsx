@@ -47,9 +47,9 @@ export default async function BillingPage({
       plans={plans.map((plan: { id: string; name: string; displayName: string | null; price: number | string; interval: string | null }) => ({
         id: plan.id,
         name: plan.name,
-        displayName: plan.displayName,
+        displayName: plan.displayName ?? '',
         price: Number(plan.price),
-        interval: plan.interval,
+        interval: plan.interval ?? '',
       }))}
       selectedPlanId={searchParams.plan}
     />
