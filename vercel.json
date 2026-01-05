@@ -1,6 +1,6 @@
 {
-  "buildCommand": "cd ../.. && pnpm --filter shared db:generate && cd apps/web && pnpm build",
-  "installCommand": "pnpm install",
+  "buildCommand": "pnpm build",
+  "installCommand": "cd ../.. && pnpm install && pnpm --filter shared db:generate",
   "framework": "nextjs",
   "rootDirectory": "apps/web"
 }
