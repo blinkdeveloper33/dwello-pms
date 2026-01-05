@@ -32,15 +32,19 @@ const fieldLegendVariants = cva('', {
 
 interface FieldLegendProps
   extends React.LegendHTMLAttributes<HTMLLegendElement>,
-    VariantProps<typeof fieldLegendVariants> {}
+    VariantProps<typeof fieldLegendVariants> {
+  children?: React.ReactNode;
+}
 
 const FieldLegend = React.forwardRef<HTMLLegendElement, FieldLegendProps>(
-  ({ className, variant, ...props }, ref) => (
+  ({ className, variant, children, ...props }, ref) => (
     <legend
       ref={ref}
       className={cn(fieldLegendVariants({ variant }), className)}
       {...props}
-    />
+    >
+      {children}
+    </legend>
   )
 );
 FieldLegend.displayName = 'FieldLegend';
