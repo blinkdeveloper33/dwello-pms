@@ -85,7 +85,7 @@ export default async function MetricsPage() {
     }
   });
 
-  charges.forEach((charge) => {
+  charges.forEach((charge: { createdAt: Date | string; amount: number | string; status: string }) => {
     const monthKey = new Date(charge.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
     if (monthlyData[monthKey]) {
       monthlyData[monthKey].charges += Number(charge.amount);
@@ -111,25 +111,25 @@ export default async function MetricsPage() {
 
   // Work orders by status
   const workOrderStatusData = [
-    { status: 'Open', count: workOrders.filter((wo) => wo.status === 'open').length },
-    { status: 'Assigned', count: workOrders.filter((wo) => wo.status === 'assigned').length },
-    { status: 'In Progress', count: workOrders.filter((wo) => wo.status === 'in_progress').length },
-    { status: 'Completed', count: workOrders.filter((wo) => wo.status === 'completed').length },
-    { status: 'Cancelled', count: workOrders.filter((wo) => wo.status === 'cancelled').length },
+    { status: 'Open', count: workOrders.filter((wo: { status: string }) => wo.status === 'open').length },
+    { status: 'Assigned', count: workOrders.filter((wo: { status: string }) => wo.status === 'assigned').length },
+    { status: 'In Progress', count: workOrders.filter((wo: { status: string }) => wo.status === 'in_progress').length },
+    { status: 'Completed', count: workOrders.filter((wo: { status: string }) => wo.status === 'completed').length },
+    { status: 'Cancelled', count: workOrders.filter((wo: { status: string }) => wo.status === 'cancelled').length },
   ];
 
   // Work orders by priority
   const workOrderPriorityData = [
-    { priority: 'Low', count: workOrders.filter((wo) => wo.priority === 'low').length },
-    { priority: 'Medium', count: workOrders.filter((wo) => wo.priority === 'medium').length },
-    { priority: 'High', count: workOrders.filter((wo) => wo.priority === 'high').length },
-    { priority: 'Urgent', count: workOrders.filter((wo) => wo.priority === 'urgent').length },
+    { priority: 'Low', count: workOrders.filter((wo: { priority: string }) => wo.priority === 'low').length },
+    { priority: 'Medium', count: workOrders.filter((wo: { priority: string }) => wo.priority === 'medium').length },
+    { priority: 'High', count: workOrders.filter((wo: { priority: string }) => wo.priority === 'high').length },
+    { priority: 'Urgent', count: workOrders.filter((wo: { priority: string }) => wo.priority === 'urgent').length },
   ];
 
   // Calculate totals
-  const totalRevenue = payments.reduce((sum, p) => sum + Number(p.amount), 0);
-  const totalCharges = charges.reduce((sum, c) => sum + Number(c.amount), 0);
-  const totalPaid = charges.filter((c) => c.status === 'paid').reduce((sum, c) => sum + Number(c.amount), 0);
+  const totalRevenue = payments.reduce((sum: number, p: { amount: number | string }) => sum + Number(p.amount), 0);
+  const totalCharges = charges.reduce((sum: number, c: { amount: number | string }) => sum + Number(c.amount), 0);
+  const totalPaid = charges.filter((c: { status: string }) => c.status === 'paid').reduce((sum: number, c: { amount: number | string }) => sum + Number(c.amount), 0);
   const collectionRate = totalCharges > 0 ? (totalPaid / totalCharges) * 100 : 0;
 
   return (
