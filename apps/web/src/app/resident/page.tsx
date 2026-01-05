@@ -95,11 +95,8 @@ export default async function ResidentPortalPage() {
   const documents = await prisma.document.findMany({
     where: {
       orgId: currentOrgId,
-      ...(propertyIds.length > 0 || unitIds.length > 0 ? {
-        OR: [
-          ...(propertyIds.length > 0 ? [{ propertyId: { in: propertyIds } }] : []),
-          ...(unitIds.length > 0 ? [{ unitId: { in: unitIds } }] : []),
-        ],
+      ...(propertyIds.length > 0 ? {
+        propertyId: { in: propertyIds },
       } : {}),
     },
     orderBy: { createdAt: 'desc' },
