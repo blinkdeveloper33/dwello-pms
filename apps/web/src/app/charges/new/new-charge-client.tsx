@@ -16,7 +16,7 @@ const chargeSchema = z.object({
   description: z.string().min(1, 'Description is required'),
   amount: z.string().refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, 'Amount must be a positive number'),
   dueDate: z.string().min(1, 'Due date is required'),
-  isRecurring: z.boolean().default(false),
+  isRecurring: z.boolean().optional().default(false),
   recurringSchedule: z.object({
     frequency: z.enum(['monthly', 'quarterly', 'yearly']).optional(),
     startDate: z.string().optional(),
