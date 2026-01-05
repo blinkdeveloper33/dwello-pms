@@ -78,7 +78,7 @@ export default async function MetricsPage() {
     monthlyData[monthKey] = { revenue: 0, charges: 0, paid: 0, pending: 0 };
   }
 
-  payments.forEach((payment) => {
+  payments.forEach((payment: { createdAt: Date | string }) => {
     const monthKey = new Date(payment.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
     if (monthlyData[monthKey]) {
       monthlyData[monthKey].revenue += Number(payment.amount);
