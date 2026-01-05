@@ -87,7 +87,7 @@ export const authOptions: NextAuthOptions = {
                   description: 'Full access to all features',
                   isSystem: true,
                   permissions: {
-                    create: permissions.map((p) => ({
+                    create: permissions.map((p: { id: string }) => ({
                       permissionId: p.id,
                     })),
                   },
