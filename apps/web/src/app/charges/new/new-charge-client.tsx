@@ -16,7 +16,7 @@ const chargeSchema = z.object({
   description: z.string().min(1, 'Description is required'),
   amount: z.string().refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, 'Amount must be a positive number'),
   dueDate: z.string().min(1, 'Due date is required'),
-  isRecurring: z.boolean().optional().default(false),
+  isRecurring: z.boolean().optional(),
   recurringSchedule: z.object({
     frequency: z.enum(['monthly', 'quarterly', 'yearly']).optional(),
     startDate: z.string().optional(),
@@ -103,7 +103,7 @@ export function NewChargeClient({
           description: data.description,
           amount: parseFloat(data.amount),
           dueDate: data.dueDate,
-          isRecurring: data.isRecurring,
+          isRecurring: data.isRecurring ?? false,
           recurringSchedule: data.isRecurring ? data.recurringSchedule : undefined,
           status: 'pending',
         }),
