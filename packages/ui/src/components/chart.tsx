@@ -223,7 +223,7 @@ const ChartTooltipContent = React.forwardRef<
                                         background: "transparent",
                                       }
                                     : {}),
-                              } as React.CSSProperties
+                              } as React.CSSProperties & Record<string, any>
                             }
                           />
                         )}
@@ -254,7 +254,7 @@ const ChartTooltipContent = React.forwardRef<
                                           background: "transparent",
                                         }
                                       : {}),
-                                } as React.CSSProperties
+                                } as React.CSSProperties & Record<string, any>
                               }
                             />
                           )
