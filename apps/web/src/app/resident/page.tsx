@@ -30,7 +30,7 @@ export default async function ResidentPortalPage() {
       type: 'resident',
     },
     include: {
-      contactLinks: {
+      links: {
         include: {
           property: { select: { id: true, name: true } },
           unit: { select: { id: true, unitNumber: true } },
@@ -96,8 +96,8 @@ export default async function ResidentPortalPage() {
     where: {
       orgId: currentOrgId,
       OR: [
-        { propertyId: { in: propertyIds } },
-        ...(unitIds.length > 0 ? [{ propertyId: null }] : []),
+        ...(propertyIds.length > 0 ? [{ propertyId: { in: propertyIds } }] : []),
+        ...(unitIds.length > 0 ? [{ unitId: { in: unitIds } }] : []),
       ],
     },
     orderBy: { createdAt: 'desc' },
@@ -111,7 +111,14 @@ export default async function ResidentPortalPage() {
       currentOrgId={currentOrgId}
       residentContact={residentContact}
       balance={balance}
-      charges={charges}
+      charges={charges.map((c: { id: string; description: string; amount: any; status: string; property: { id: string; name: string } | null; unit: { id: string; unitNumber: string } | null }) => ({
+        id: c.id,
+        description: c.description,
+        amount: Number(c.amount),
+        status: c.status,
+        property: c.property,
+        unit: c.unit,
+      }))}
       payments={payments}
       documents={documents}
     />

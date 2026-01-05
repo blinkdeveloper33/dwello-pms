@@ -31,7 +31,7 @@ const fieldLegendVariants = cva('', {
 });
 
 interface FieldLegendProps
-  extends React.LegendHTMLAttributes<HTMLLegendElement>,
+  extends React.HTMLAttributes<HTMLLegendElement>,
     VariantProps<typeof fieldLegendVariants> {
   children?: React.ReactNode;
   className?: string;
