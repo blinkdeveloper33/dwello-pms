@@ -81,7 +81,7 @@ export default async function ResidentPortalPage() {
     take: 10,
   });
 
-  const balance = charges.reduce((sum: number, charge: { amount: number | string }) => sum + Number(charge.amount), 0);
+  const balance = charges.reduce((sum: number, charge: any) => sum + Number(charge.amount), 0);
 
   // Get documents
   const contactLinks = await prisma.contactLink.findMany({
