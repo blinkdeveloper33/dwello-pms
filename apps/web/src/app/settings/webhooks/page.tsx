@@ -27,7 +27,7 @@ export default async function WebhooksPage() {
       where: { orgId: currentOrgId },
       orderBy: { createdAt: 'desc' },
     }),
-    prisma.webhookDelivery.findMany({
+    prisma.webhookOutbox.findMany({
       where: { webhook: { orgId: currentOrgId } },
       include: {
         webhook: { select: { id: true, url: true } },

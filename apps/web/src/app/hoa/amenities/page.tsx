@@ -28,12 +28,12 @@ export default async function AmenitiesPage() {
       orderBy: { name: 'asc' },
     }),
     prisma.reservation.findMany({
-      where: { orgId: currentOrgId },
+      where: { amenity: { orgId: currentOrgId } },
       include: {
         amenity: { select: { id: true, name: true } },
         contact: { select: { id: true, firstName: true, lastName: true } },
       },
-      orderBy: { startDate: 'asc' },
+      orderBy: { startTime: 'asc' },
     }),
   ]);
 

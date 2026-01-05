@@ -30,7 +30,11 @@ export default async function ArcPage() {
       contact: { select: { id: true, firstName: true, lastName: true } },
       approvals: {
         include: {
-          user: { select: { id: true, name: true } },
+          membership: { 
+            include: {
+              user: { select: { id: true, name: true } }
+            }
+          },
         },
         orderBy: { createdAt: 'asc' },
       },

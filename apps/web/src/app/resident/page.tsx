@@ -95,10 +95,12 @@ export default async function ResidentPortalPage() {
   const documents = await prisma.document.findMany({
     where: {
       orgId: currentOrgId,
-      OR: [
-        ...(propertyIds.length > 0 ? [{ propertyId: { in: propertyIds } }] : []),
-        ...(unitIds.length > 0 ? [{ unitId: { in: unitIds } }] : []),
-      ],
+      ...(propertyIds.length > 0 || unitIds.length > 0 ? {
+        OR: [
+          ...(propertyIds.length > 0 ? [{ propertyId: { in: propertyIds } }] : []),
+          ...(unitIds.length > 0 ? [{ unitId: { in: unitIds } }] : []),
+        ],
+      } : {}),
     },
     orderBy: { createdAt: 'desc' },
     take: 10,
@@ -111,7 +113,7 @@ export default async function ResidentPortalPage() {
       currentOrgId={currentOrgId}
       residentContact={residentContact}
       balance={balance}
-      charges={charges.map((c: { id: string; description: string; amount: any; status: string; property: { id: string; name: string } | null; unit: { id: string; unitNumber: string } | null }) => ({
+      charges={charges.map((c: any) => ({
         id: c.id,
         description: c.description,
         amount: Number(c.amount),
