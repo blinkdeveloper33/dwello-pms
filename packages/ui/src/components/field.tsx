@@ -34,6 +34,7 @@ interface FieldLegendProps
   extends React.LegendHTMLAttributes<HTMLLegendElement>,
     VariantProps<typeof fieldLegendVariants> {
   children?: React.ReactNode;
+  className?: string;
 }
 
 const FieldLegend = React.forwardRef<HTMLLegendElement, FieldLegendProps>(
