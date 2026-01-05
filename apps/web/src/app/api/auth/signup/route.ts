@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
         description: 'Full access',
         isSystem: true,
         permissions: {
-          create: (await prisma.permission.findMany()).map((p) => ({
+          create: (await prisma.permission.findMany()).map((p: { id: string }) => ({
             permissionId: p.id,
           })),
         },
