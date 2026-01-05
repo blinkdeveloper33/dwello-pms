@@ -55,7 +55,7 @@ export default async function WorkOrderDetailPage({ params }: { params: { id: st
   return (
     <WorkOrderDetailClient
       user={session.user}
-      orgs={memberships.map((m: { org: { id: string; name: string | null } }) => ({ id: m.org.id, name: m.org.name }))}
+      orgs={memberships.map((m: { org: { id: string; name: string | null } }) => ({ id: m.org.id, name: m.org.name ?? '' }))}
       currentOrgId={currentOrgId}
       workOrder={workOrder}
       auditLogs={auditLogs}

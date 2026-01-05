@@ -41,7 +41,7 @@ export default async function ArcPage() {
   return (
     <ArcClient
       user={session.user}
-      orgs={memberships.map((m: { org: { id: string; name: string | null } }) => ({ id: m.org.id, name: m.org.name }))}
+      orgs={memberships.map((m: { org: { id: string; name: string | null } }) => ({ id: m.org.id, name: m.org.name ?? '' }))}
       currentOrgId={currentOrgId}
       initialRequests={requests}
     />

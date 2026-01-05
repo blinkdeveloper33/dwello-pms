@@ -39,7 +39,7 @@ export default async function CommunicationsPage() {
   return (
     <CommunicationsClient
       user={session.user}
-      orgs={memberships.map((m: { org: { id: string; name: string | null } }) => ({ id: m.org.id, name: m.org.name }))}
+      orgs={memberships.map((m: { org: { id: string; name: string | null } }) => ({ id: m.org.id, name: m.org.name ?? '' }))}
       currentOrgId={currentOrgId}
       initialCommunications={communications}
       initialTemplates={templates}

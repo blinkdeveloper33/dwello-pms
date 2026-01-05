@@ -42,7 +42,7 @@ export default async function PropertiesPage() {
   return (
     <PropertiesClient
       user={session.user}
-      orgs={memberships.map((m: { org: { id: string; name: string | null } }) => ({ id: m.org.id, name: m.org.name }))}
+      orgs={memberships.map((m: { org: { id: string; name: string | null } }) => ({ id: m.org.id, name: m.org.name ?? '' }))}
       currentOrgId={currentOrgId}
       initialProperties={properties}
     />
