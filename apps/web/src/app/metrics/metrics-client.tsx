@@ -275,7 +275,7 @@ export function MetricsClient({
                         cx="50%"
                         cy="50%"
                         outerRadius={100}
-                        label={({ status, count }) => `${status}: ${count}`}
+                        label={(entry: any) => `${entry.status}: ${entry.count}`}
                       >
                         {metrics.workOrderStatusData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
