@@ -55,15 +55,16 @@ async function getUsageData(orgId: string) {
           break;
       }
 
-      const percentage = quota.limit > 0 ? (current / quota.limit) * 100 : 0;
+      const limit = quota.limit ?? 0;
+      const percentage = limit > 0 ? (current / limit) * 100 : 0;
       const isNearLimit = percentage >= 80;
-      const isAtLimit = current >= quota.limit;
+      const isAtLimit = current >= limit;
 
       return {
         resource: quota.resource,
         limit: quota.limit,
         current,
-        remaining: Math.max(0, quota.limit - current),
+        remaining: Math.max(0, limit - current),
         percentage,
         isNearLimit,
         isAtLimit,
